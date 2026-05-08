@@ -464,10 +464,15 @@
 
     try {
       const payload = encodeURIComponent(JSON.stringify({ fecha: todayShort(), rows }));
-      await fetch(APPS_SCRIPT_URL + '?payload=' + payload + '&t=' + Date.now(), { mode: 'no-cors' });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 25000);
+      const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload + '&t=' + Date.now(), { signal: controller.signal });
+      clearTimeout(timer);
+      const result = await resp.json();
+      if (!result.ok) throw new Error(result.error || 'Error en servidor');
       toast('¡Guardado en Google Sheets!', 'ok');
     } catch(e) {
-      toast('Error al guardar: ' + e.message, 'err');
+      toast('Error: ' + (e.name === 'AbortError' ? 'Sin respuesta' : e.message), 'err');
     }
 
     saving = false;
