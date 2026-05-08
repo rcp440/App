@@ -463,12 +463,8 @@
     }));
 
     try {
-      await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ fecha: todayShort(), rows })
-      });
+      const payload = encodeURIComponent(JSON.stringify({ fecha: todayShort(), rows }));
+      await fetch(APPS_SCRIPT_URL + '?payload=' + payload + '&t=' + Date.now(), { mode: 'no-cors' });
       toast('¡Guardado en Google Sheets!', 'ok');
     } catch(e) {
       toast('Error al guardar: ' + e.message, 'err');
