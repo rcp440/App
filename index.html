@@ -462,30 +462,21 @@
       obs: p.obs || ''
     }));
 
-    const cbName = '_save' + Date.now();
-    const payload = encodeURIComponent(JSON.stringify({ fecha: todayShort(), rows }));
-
     try {
-      await new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        const timer = setTimeout(() => {
-          s.remove(); delete window[cbName];
-          reject(new Error('Sin respuesta del servidor'));
-        }, 20000);
-        window[cbName] = (resp) => {
-          clearTimeout(timer); s.remove(); delete window[cbName];
-          resp && resp.ok ? resolve() : reject(new Error(resp && resp.error || 'Error en servidor'));
-        };
-        s.onerror = () => {
-          clearTimeout(timer); s.remove(); delete window[cbName];
-          reject(new Error('No se pudo conectar'));
-        };
-        s.src = APPS_SCRIPT_URL + '?payload=' + payload + '&callback=' + cbName + '&t=' + Date.now();
-        document.head.appendChild(s);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      const resp = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ fecha: todayShort(), rows }),
+        signal: controller.signal
       });
+      clearTimeout(timer);
+      const result = await resp.json();
+      if (!result.ok) throw new Error(result.error || 'Error en servidor');
       toast('¡Guardado en Google Sheets!', 'ok');
     } catch(e) {
-      toast('Error: ' + e.message, 'err');
+      toast('Error: ' + (e.name === 'AbortError' ? 'Sin respuesta del servidor' : e.message), 'err');
     }
 
     saving = false;
