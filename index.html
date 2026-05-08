@@ -463,20 +463,15 @@
     }));
 
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 20000);
-      const resp = await fetch(APPS_SCRIPT_URL, {
+      await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ fecha: todayShort(), rows }),
-        signal: controller.signal
+        body: JSON.stringify({ fecha: todayShort(), rows })
       });
-      clearTimeout(timer);
-      const result = await resp.json();
-      if (!result.ok) throw new Error(result.error || 'Error en servidor');
       toast('¡Guardado en Google Sheets!', 'ok');
     } catch(e) {
-      toast('Error: ' + (e.name === 'AbortError' ? 'Sin respuesta del servidor' : e.message), 'err');
+      toast('Error al guardar: ' + e.message, 'err');
     }
 
     saving = false;
