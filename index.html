@@ -444,13 +444,19 @@
     }
     if (!people.length) { toast('No hay personas para guardar', 'err'); return; }
 
+    const teacherId = teacherIdInput.value.trim();
+    if (!teacherId) {
+      toast('Ingresá tu ID (podés usar tu DNI o nro de celular)', 'err');
+      teacherIdInput.focus();
+      return;
+    }
+
     saving = true;
     const btn = document.getElementById('saveBtn');
     btn.disabled = true;
     btn.innerHTML = '<span class="icon">⏳</span> Guardando...';
 
     const teacher = teacherInput.value.trim() || 'Sin nombre';
-    const teacherId = teacherIdInput.value.trim();
     const fecha = selectedDate;
     const hora  = nowTime();
 
