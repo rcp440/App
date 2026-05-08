@@ -451,26 +451,31 @@
 
     const teacher = teacherInput.value.trim() || 'Sin nombre';
     const teacherId = teacherIdInput.value.trim();
-    const rows = people.map(p => ({
-      nombre: p.name,
-      celular: p.phone || '',
-      estado: p.status === 'p' ? 'Presente' : 'Ausente',
-      obs: p.obs || ''
-    }));
-    const cbName = '_save' + Date.now();
-    const payload = encodeURIComponent(JSON.stringify({
-      fecha: todayShort(), hora: nowTime(), id: teacherId, maestro: teacher, rows
-    }));
+    const fecha = selectedDate;
+    const hora  = nowTime();
 
-    try {
-      await new Promise((resolve, reject) => {
+    function jsonpCall(params) {
+      return new Promise((resolve, reject) => {
+        const cb = '_cb' + Date.now() + Math.random().toString(36).slice(2);
         const s = document.createElement('script');
-        const timer = setTimeout(() => { s.remove(); delete window[cbName]; reject(new Error('Sin respuesta')); }, 25000);
-        window[cbName] = (r) => { clearTimeout(timer); s.remove(); delete window[cbName]; r && r.ok ? resolve() : reject(new Error(r && r.error || 'Error')); };
-        s.onerror = () => { clearTimeout(timer); s.remove(); delete window[cbName]; reject(new Error('No se pudo conectar')); };
-        s.src = APPS_SCRIPT_URL + '?payload=' + payload + '&callback=' + cbName + '&t=' + Date.now();
+        const timer = setTimeout(() => { s.remove(); delete window[cb]; reject(new Error('Sin respuesta')); }, 20000);
+        window[cb] = (r) => { clearTimeout(timer); s.remove(); delete window[cb]; r && r.ok ? resolve() : reject(new Error(r && r.error || 'Error')); };
+        s.onerror = () => { clearTimeout(timer); s.remove(); delete window[cb]; reject(new Error('No se pudo conectar')); };
+        const qs = Object.entries({ ...params, callback: cb }).map(([k,v]) => k + '=' + encodeURIComponent(v)).join('&');
+        s.src = APPS_SCRIPT_URL + '?' + qs;
         document.head.appendChild(s);
       });
+    }
+
+    try {
+      await jsonpCall({ action: 'clear', fecha, id: teacherId });
+      for (const p of people) {
+        await jsonpCall({
+          action: 'add', fecha, hora, id: teacherId, maestro: teacher,
+          nombre: p.name, celular: p.phone || '',
+          estado: p.status === 'p' ? 'P' : 'A', obs: p.obs || ''
+        });
+      }
       toast('¡Guardado en Google Sheets!', 'ok');
     } catch(e) {
       toast('Error: ' + e.message, 'err');
