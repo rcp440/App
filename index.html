@@ -452,27 +452,28 @@
     const teacher = teacherInput.value.trim() || 'Sin nombre';
     const teacherId = teacherIdInput.value.trim();
     const rows = people.map(p => ({
-      fecha: todayShort(),
-      hora: nowTime(),
-      id: teacherId,
-      maestro: teacher,
       nombre: p.name,
       celular: p.phone || '',
       estado: p.status === 'p' ? 'Presente' : 'Ausente',
       obs: p.obs || ''
     }));
+    const cbName = '_save' + Date.now();
+    const payload = encodeURIComponent(JSON.stringify({
+      fecha: todayShort(), hora: nowTime(), id: teacherId, maestro: teacher, rows
+    }));
 
     try {
-      const payload = encodeURIComponent(JSON.stringify({ fecha: todayShort(), rows }));
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 25000);
-      const resp = await fetch(APPS_SCRIPT_URL + '?payload=' + payload + '&t=' + Date.now(), { signal: controller.signal });
-      clearTimeout(timer);
-      const result = await resp.json();
-      if (!result.ok) throw new Error(result.error || 'Error en servidor');
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        const timer = setTimeout(() => { s.remove(); delete window[cbName]; reject(new Error('Sin respuesta')); }, 25000);
+        window[cbName] = (r) => { clearTimeout(timer); s.remove(); delete window[cbName]; r && r.ok ? resolve() : reject(new Error(r && r.error || 'Error')); };
+        s.onerror = () => { clearTimeout(timer); s.remove(); delete window[cbName]; reject(new Error('No se pudo conectar')); };
+        s.src = APPS_SCRIPT_URL + '?payload=' + payload + '&callback=' + cbName + '&t=' + Date.now();
+        document.head.appendChild(s);
+      });
       toast('¡Guardado en Google Sheets!', 'ok');
     } catch(e) {
-      toast('Error: ' + (e.name === 'AbortError' ? 'Sin respuesta' : e.message), 'err');
+      toast('Error: ' + e.message, 'err');
     }
 
     saving = false;

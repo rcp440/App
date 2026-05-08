@@ -105,20 +105,23 @@ function guardarDatos(data) {
     sheet.setFrozenRows(1);
   }
 
-  const fecha = data.fecha || (data.rows && data.rows[0] && data.rows[0].fecha) || '';
-  const id    = String((data.rows && data.rows[0] && data.rows[0].id) || '').trim();
+  const fecha   = data.fecha   || (data.rows && data.rows[0] && data.rows[0].fecha)   || '';
+  const hora    = data.hora    || (data.rows && data.rows[0] && data.rows[0].hora)    || '';
+  const id      = String(data.id    || (data.rows && data.rows[0] && data.rows[0].id)    || '').trim();
+  const maestro = data.maestro || (data.rows && data.rows[0] && data.rows[0].maestro) || '';
 
-  // Borrar filas de misma fecha + DNI para evitar duplicados (el nombre del líder puede variar)
+  // Borrar filas de misma fecha + DNI para evitar duplicados
   const lastRow = sheet.getLastRow();
   if (lastRow > 1) {
     const vals = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+    const toStr = d => (d instanceof Date) ? d.toISOString().slice(0, 10) : String(d).slice(0, 10);
     for (let i = vals.length - 1; i >= 0; i--) {
-      if (vals[i][0] === fecha && String(vals[i][2]).trim() === id) sheet.deleteRow(i + 2);
+      if (toStr(vals[i][0]) === fecha && String(vals[i][2]).trim() === id) sheet.deleteRow(i + 2);
     }
   }
 
   (data.rows || []).forEach(r => {
-    sheet.appendRow([r.fecha, r.hora, r.id || '', r.maestro, r.nombre, r.celular, r.estado, r.obs || '']);
+    sheet.appendRow([fecha, hora, id, maestro, r.nombre, r.celular, r.estado, r.obs || '']);
     const row = sheet.getLastRow();
     sheet.getRange(row, 1, 1, 8).setBackground(r.estado === 'Presente' ? '#EBF8F3' : '#FCECEA');
   });
