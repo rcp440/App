@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Asistencia al Grupo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  :root {
+    --bg: #F5F4F0;
+    --card: #FFFFFF;
+    --text: #1A1A18;
+    --muted: #8A8A80;
+    --border: #E2E1DC;
+    --green: #1D9E75;
+    --green-bg: #EBF8F3;
+    --red: #D04030;
+    --red-bg: #FCECEA;
+    --purple: #5B4FD4;
+    --purple-bg: #EFEDFC;
+    --radius: 14px;
+    --radius-sm: 9px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); }
+
+  .app { max-width: 480px; margin: 0 auto; padding: 0 0 210px; min-height: 100vh; }
+
+  /* HEADER */
+  .header { padding: 52px 20px 16px; background: var(--bg); position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--border); }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .header h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.2; }
+  .header h1 span { color: var(--purple); }
+  .date-pill-wrap { position: relative; display: inline-block; margin-top: 4px; cursor: pointer; }
+  .date-pill { font-family: 'DM Mono', monospace; font-size: 11px; background: var(--border); color: var(--muted); padding: 4px 10px; border-radius: 20px; white-space: nowrap; user-select: none; }
+  .date-pill-wrap:hover .date-pill { background: var(--purple-bg); color: var(--purple); }
+  .date-pill-wrap input[type="date"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .teacher-row { margin-top: 12px; display: flex; gap: 8px; }
+  .teacher-input { flex: 1; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: var(--card); color: var(--text); outline: none; }
+  .teacher-input:focus { border-color: var(--purple); }
+  .id-input { width: 84px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 13px; font-family: 'DM Mono', monospace; background: var(--card); color: var(--text); outline: none; text-align: center; }
+  .id-input:focus { border-color: var(--purple); }
+
+  /* STATS */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 20px; }
+  .stat { background: var(--card); border-radius: var(--radius); padding: 8px 10px; text-align: center; border: 1px solid var(--border); }
+  .stat-num { font-size: 22px; font-weight: 600; letter-spacing: -1px; color: var(--text); }
+  .stat-num.g { color: var(--green); }
+  .stat-num.r { color: var(--red); }
+  .stat-lbl { font-size: 10px; color: var(--muted); margin-top: 1px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* LIST */
+  .list-header { padding: 4px 20px 10px; display: flex; align-items: center; justify-content: space-between; }
+  .list-header span { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .list-header button { font-size: 12px; color: var(--purple); background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; }
+  .list { padding: 0 20px; display: flex; flex-direction: column; gap: 6px; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; transition: border-color 0.15s, background 0.15s; }
+  .card.presente { border-color: var(--green); background: var(--green-bg); }
+  .card.ausente { border-color: #E8C8C4; background: var(--red-bg); }
+
+  .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; background: var(--purple-bg); color: var(--purple); }
+  .card.presente .avatar { background: #D0F0E5; color: #0D6647; }
+  .card.ausente .avatar { background: #F5D5D0; color: #8B2010; }
+
+  .info { flex: 1; min-width: 0; }
+  .name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .phone-input { font-size: 11px; color: var(--muted); margin-top: 1px; font-family: 'DM Mono', monospace; background: transparent; border: none; outline: none; padding: 0; width: 100%; }
+  .phone-input:focus { color: var(--text); }
+  .obs-input { width: 100%; border: none; border-top: 1px solid rgba(0,0,0,0.08); background: transparent; font-size: 11px; font-family: 'DM Sans', sans-serif; color: var(--text); padding: 5px 2px 1px; outline: none; margin-top: 2px; }
+  .obs-input::placeholder { color: var(--muted); font-style: italic; }
+  .status-txt { font-size: 10px; margin-top: 1px; font-weight: 500; }
+  .card.presente .status-txt { color: var(--green); }
+  .card.ausente .status-txt { color: var(--red); }
+
+  .btns { display: flex; gap: 4px; flex-shrink: 0; }
+  .bp, .ba { border: 1px solid var(--border); border-radius: var(--radius-sm); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--bg); color: var(--muted); transition: all 0.1s; }
+  .bp.on { background: var(--green); border-color: var(--green); color: #fff; }
+  .ba.on { background: var(--red); border-color: var(--red); color: #fff; }
+  .del { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; opacity: 0.4; }
+  .del:hover { opacity: 0.8; color: var(--red); }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 20px 20px; }
+
+  /* ADD FORM — fijo al fondo */
+  .add-section { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--bg); border-top: 1px solid var(--border); padding: 8px 20px 18px; z-index: 9; }
+  .add-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .add-fields { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+  .add-fields input { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: var(--card); color: var(--text); outline: none; }
+  .add-fields input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-bg); }
+  .add-actions { display: flex; gap: 8px; }
+  .add-btn { flex: 1; background: var(--purple); color: #fff; border: none; border-radius: var(--radius-sm); padding: 8px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; letter-spacing: -0.2px; }
+  .add-btn:active { opacity: 0.85; }
+  .save-btn { flex: 1; background: var(--green); color: #fff; border: none; border-radius: var(--radius-sm); padding: 9px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .save-btn .icon { font-size: 15px; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text); color: #fff; border-radius: 30px; padding: 10px 20px; font-size: 13px; font-weight: 500; opacity: 0; transition: all 0.25s; pointer-events: none; white-space: nowrap; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.ok { background: var(--green); }
+  .toast.err { background: var(--red); }
+
+  .empty { text-align: center; padding: 32px 20px; color: var(--muted); font-size: 14px; }
+
+  #printReport { display: none; }
+  .empty-icon { font-size: 32px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>Asistencia <span>·</span> al Grupo</h1>
+        <div class="date-pill-wrap">
+          <div class="date-pill" id="date-pill"></div>
+          <input type="date" id="date-input" />
+        </div>
+      </div>
+    </div>
+    <div class="teacher-row">
+      <input class="id-input" id="teacherId" placeholder="ID" maxlength="10" />
+      <input class="teacher-input" id="teacher" placeholder="Tu nombre (Lider)" />
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="sTotal">0</div><div class="stat-lbl">Total</div></div>
+    <div class="stat"><div class="stat-num g" id="sPres">0</div><div class="stat-lbl">Presentes</div></div>
+    <div class="stat"><div class="stat-num r" id="sAus">0</div><div class="stat-lbl">Ausentes</div></div>
+  </div>
+
+  <div class="list-header">
+    <span>Personas</span>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button onclick="descargarXLS()" title="Descargar CSV" style="font-size:12px;color:var(--green);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;">⬇ CSV</button>
+      <button onclick="imprimirPDF()" title="Informe PDF" style="font-size:12px;color:var(--purple);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;">⬇ PDF</button>
+      <button id="toggleAllBtn" onclick="toggleAll()">Marcar todos presentes</button>
+    </div>
+  </div>
+  <div class="list" id="list"></div>
+</div>
+
+<div class="add-section">
+  <div class="add-title">Agregar persona</div>
+  <div class="add-fields">
+    <input type="text" id="nNombre" placeholder="Nombre y apellido" maxlength="50" onkeydown="if(event.key==='Enter')document.getElementById('nCel').focus()" />
+    <input type="tel" id="nCel" placeholder="Celular (ej: 2996205606)" maxlength="20" onkeydown="if(event.key==='Enter')addPerson()" />
+  </div>
+  <div class="add-actions">
+    <button class="add-btn" onclick="addPerson()">+ Agregar persona</button>
+    <button class="save-btn" id="saveBtn" onclick="guardar()"><span class="icon">📋</span> Guardar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="printReport"></div>
+
+<script>
+  // =====================================================
+  // CONFIGURACIÓN — pegá tu URL de Apps Script aquí
+  // =====================================================
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz6ud9DSPluLhn5-BCi-tFmuB1M8RzLps2EvkCT0lI51hQWgvnNiaoeejDvL4H95fIx_g/exec';
+  // =====================================================
+
+  const teacherInput = document.getElementById('teacher');
+  const teacherIdInput = document.getElementById('teacherId');
+  teacherInput.value = localStorage.getItem('teacher') || '';
+  teacherIdInput.value = localStorage.getItem('teacherId') || '';
+  teacherIdInput.addEventListener('input', () => localStorage.setItem('teacherId', teacherIdInput.value));
+  teacherIdInput.addEventListener('change', () => {
+    const dni = teacherIdInput.value.trim();
+    if (dni) cargarPersonasPorDni(dni);
+  });
+  teacherIdInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { teacherIdInput.blur(); const dni = teacherIdInput.value.trim(); if (dni) cargarPersonasPorDni(dni); }
+  });
+  // Auto-cargar al iniciar si ya había un DNI guardado
+  if (teacherIdInput.value.trim()) cargarPersonasPorDni(teacherIdInput.value.trim());
+
+  function cargarPersonasPorDni(dni) {
+    toast('Buscando reunión anterior...', '');
+    const cbName = '_cb' + Date.now();
+    const s = document.createElement('script');
+    window[cbName] = (resp) => {
+      delete window[cbName];
+      s.remove();
+      if (resp && resp.ok && resp.personas && resp.personas.length) {
+        people = resp.personas.map(p => ({ name: p.name, phone: p.phone || '', obs: '', status: 'a' }));
+        if (resp.maestro) { teacherInput.value = resp.maestro; localStorage.setItem('teacher', resp.maestro); }
+        savePeople();
+        render();
+        toast(people.length + ' personas cargadas', 'ok');
+      } else {
+        people = [];
+        savePeople();
+        teacherInput.value = '';
+        localStorage.setItem('teacher', '');
+        render();
+        toast('Sin discípulos — ingresá el nombre y agregá personas', '');
+      }
+    };
+    s.onerror = () => { s.remove(); delete window[cbName]; toast('No se pudo conectar', 'err'); };
+    s.src = APPS_SCRIPT_URL + '?action=getPersonas&dni=' + encodeURIComponent(dni) + '&callback=' + cbName;
+    document.head.appendChild(s);
+  }
+
+  function teacherKey() {
+    const t = teacherInput.value.trim().toLowerCase();
+    return t ? 'people_' + t : null;
+  }
+
+  function loadPeople() {
+    const key = teacherKey();
+    people = key ? JSON.parse(localStorage.getItem(key) || '[]') : [];
+  }
+
+  let people = [];
+  loadPeople();
+
+  teacherInput.addEventListener('change', () => {
+    localStorage.setItem('teacher', teacherInput.value);
+    loadPeople();
+    render();
+  });
+
+  function savePeople() {
+    const key = teacherKey();
+    if (key) localStorage.setItem(key, JSON.stringify(people));
+  }
+  function initials(n) { return n.trim().split(' ').slice(0,2).map(w=>w[0].toUpperCase()).join(''); }
+
+  let selectedDate = localStorage.getItem('selectedDate') || new Date().toISOString().slice(0, 10);
+
+  function dateObj() { return new Date(selectedDate + 'T12:00:00'); }
+  function todayStr() { return dateObj().toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' }); }
+  function todayShort() { return dateObj().toLocaleDateString('es-AR'); }
+  function nowTime() { return new Date().toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' }); }
+
+  function setDate(val) {
+    selectedDate = val;
+    localStorage.setItem('selectedDate', val);
+    document.getElementById('date-pill').textContent = todayStr();
+  }
+
+  const dateInput = document.getElementById('date-input');
+  dateInput.value = selectedDate;
+  dateInput.addEventListener('change', () => {
+    if (dateInput.value !== selectedDate) {
+      setDate(dateInput.value);
+      people.forEach(p => { p.status = 'a'; p.obs = ''; });
+      savePeople();
+      render();
+    }
+  });
+  setDate(selectedDate);
+
+  function imprimirPDF() {
+    if (!people.length) { toast('No hay personas para imprimir', 'err'); return; }
+    const teacher = teacherInput.value.trim() || 'Sin nombre';
+    const teacherId = teacherIdInput.value.trim();
+    const fecha = todayShort();
+    const pres = people.filter(p => p.status === 'p').length;
+    const aus = people.length - pres;
+
+    const filas = people.map((p, i) => `
+      <tr style="background:${p.status==='p'?'#EBF8F3':'#FCECEA'}">
+        <td style="padding:7px 8px;border-bottom:1px solid #eee">${i+1}</td>
+        <td style="padding:7px 8px;border-bottom:1px solid #eee;font-weight:500">${p.name}</td>
+        <td style="padding:7px 8px;border-bottom:1px solid #eee;font-family:monospace;font-size:12px">${p.phone||''}</td>
+        <td style="padding:7px 8px;border-bottom:1px solid #eee;font-weight:600;color:${p.status==='p'?'#1D9E75':'#D04030'}">${p.status==='p'?'Presente':'Ausente'}</td>
+        <td style="padding:7px 8px;border-bottom:1px solid #eee;font-size:12px;color:#555">${p.obs||''}</td>
+      </tr>`).join('');
+
+    const report = document.getElementById('printReport');
+    report.innerHTML = `
+      <div style="font-family:Arial,sans-serif;padding:24px;max-width:780px;margin:0 auto">
+        <div style="text-align:center;border-bottom:3px solid #4A4090;padding-bottom:14px;margin-bottom:20px">
+          <h1 style="color:#4A4090;font-size:22px;margin:0 0 6px">Asistencia al Grupo</h1>
+          <p style="margin:0;color:#444;font-size:13px">
+            <strong>Fecha:</strong> ${fecha} &nbsp;&nbsp;
+            <strong>Líder:</strong> ${teacher} &nbsp;&nbsp;
+            <strong>DNI:</strong> ${teacherId}
+          </p>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:20px;text-align:center">
+          <div style="flex:1;border:1px solid #ccc;border-radius:8px;padding:10px">
+            <div style="font-size:26px;font-weight:700">${people.length}</div>
+            <div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px">Total</div>
+          </div>
+          <div style="flex:1;border:2px solid #1D9E75;border-radius:8px;padding:10px;background:#EBF8F3">
+            <div style="font-size:26px;font-weight:700;color:#1D9E75">${pres}</div>
+            <div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px">Presentes</div>
+          </div>
+          <div style="flex:1;border:2px solid #D04030;border-radius:8px;padding:10px;background:#FCECEA">
+            <div style="font-size:26px;font-weight:700;color:#D04030">${aus}</div>
+            <div style="font-size:10px;color:#888;text-transform:uppercase;margin-top:2px">Ausentes</div>
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:#4A4090;color:#fff">
+              <th style="padding:8px 6px;text-align:left;width:24px">#</th>
+              <th style="padding:8px 6px;text-align:left">Nombre</th>
+              <th style="padding:8px 6px;text-align:left">Celular</th>
+              <th style="padding:8px 6px;text-align:left">Estado</th>
+              <th style="padding:8px 6px;text-align:left">Observaciones</th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
+        <p style="margin-top:20px;font-size:10px;color:#aaa;text-align:center">
+          Generado: ${new Date().toLocaleString('es-AR')}
+        </p>
+      </div>`;
+
+    report.style.display = 'block';
+    toast('Generando PDF...', '');
+
+    const nombreArchivo = `asistencia_${teacherId || 'grupo'}_${fecha.replace(/\//g,'-')}.pdf`;
+    html2pdf().set({
+      margin: 8,
+      filename: nombreArchivo,
+      image: { type: 'jpeg', quality: 0.97 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).from(report).save().then(() => {
+      report.style.display = 'none';
+      toast('PDF descargado', 'ok');
+    });
+  }
+
+  function descargarXLS() {
+    if (!people.length) { toast('No hay personas para descargar', 'err'); return; }
+    const teacher = teacherInput.value.trim() || 'Sin nombre';
+    const teacherId = teacherIdInput.value.trim();
+    const fecha = todayShort();
+    const esc = s => '"' + String(s||'').replace(/"/g,'""') + '"';
+
+    const lineas = [
+      esc(`Asistencia al Grupo — ${fecha} — Líder: ${teacher} (${teacherId})`),
+      '',
+      [esc('Nombre'), esc('Celular'), esc('Estado'), esc('Observaciones')].join(','),
+      ...people.map(p => [esc(p.name), esc(p.phone), esc(p.status==='p'?'Presente':'Ausente'), esc(p.obs)].join(','))
+    ];
+
+    const csv = '﻿' + lineas.join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `asistencia_${teacherId || 'grupo'}_${fecha.replace(/\//g,'-')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Descargando...', 'ok');
+  }
+
+  function render() {
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+    let pres = 0, aus = 0;
+    if (!people.length) {
+      list.innerHTML = '<div class="empty"><div class="empty-icon">👥</div>No hay personas aún. Agregá una abajo.</div>';
+    }
+    let html = '';
+    people.forEach((p, i) => {
+      if (p.status === 'p') pres++; else aus++;
+      const cls = p.status === 'p' ? 'presente' : 'ausente';
+      const stxt = p.status === 'p' ? 'Presente ✓' : 'Ausente';
+      html += `
+        <div class="card ${cls}">
+          <div class="avatar">${initials(p.name)}</div>
+          <div class="info">
+            <div class="name">${p.name}</div>
+            <input class="phone-input" type="tel" value="${(p.phone||'').replace(/"/g,'&quot;')}" placeholder="Celular" maxlength="20" oninput="setPhone(${i},this.value)" />
+            <div class="status-txt">${stxt}</div>
+          </div>
+          <div class="btns">
+            <button class="bp ${p.status==='p'?'on':''}" onclick="toggle(${i},'p')">P</button>
+            <button class="ba ${p.status==='a'?'on':''}" onclick="toggle(${i},'a')">A</button>
+            <button class="del" onclick="del(${i})">×</button>
+          </div>
+          <input class="obs-input" placeholder="Observación..." maxlength="150" value="${(p.obs||'').replace(/"/g,'&quot;')}" oninput="setObs(${i},this.value)" />
+        </div>`;
+    });
+    list.innerHTML = html;
+    document.getElementById('sTotal').textContent = people.length;
+    document.getElementById('sPres').textContent = pres;
+    document.getElementById('sAus').textContent = aus;
+    const allPresent = people.length > 0 && people.every(p => p.status === 'p');
+    document.getElementById('toggleAllBtn').textContent = allPresent ? 'Marcar todos ausentes' : 'Marcar todos presentes';
+  }
+
+  function toggle(i, s) {
+    people[i].status = people[i].status === s ? 'a' : s;
+    savePeople(); render();
+  }
+  function del(i) {
+    if (!confirm(`Eliminar a ${people[i].name}?`)) return;
+    people.splice(i, 1); savePeople(); render();
+  }
+  function setPhone(i, val) {
+    people[i].phone = val;
+    savePeople();
+  }
+
+  function setObs(i, val) {
+    people[i].obs = val;
+    savePeople();
+  }
+
+  function toggleAll() {
+    const allPresent = people.every(p => p.status === 'p');
+    people.forEach(p => p.status = allPresent ? 'a' : 'p');
+    savePeople(); render();
+  }
+
+  function addPerson() {
+    const nI = document.getElementById('nNombre');
+    const cI = document.getElementById('nCel');
+    const name = nI.value.trim(), phone = cI.value.trim();
+    if (!name) { toast('Ingresá un nombre', 'err'); nI.focus(); return; }
+    if (people.find(p => p.name.toLowerCase() === name.toLowerCase())) { toast('Ya existe ese alumno', 'err'); return; }
+    people.push({ name, phone, obs: '', status: 'a' });
+    nI.value = ''; cI.value = ''; nI.focus();
+    savePeople(); render();
+    toast(`${name} agregado`);
+  }
+
+  let saving = false;
+
+  async function guardar() {
+    if (saving) return;
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'TU_URL_AQUI') {
+      toast('Configurá la URL del Apps Script primero', 'err');
+      return;
+    }
+    if (!people.length) { toast('No hay personas para guardar', 'err'); return; }
+
+    saving = true;
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="icon">⏳</span> Guardando...';
+
+    const teacher = teacherInput.value.trim() || 'Sin nombre';
+    const teacherId = teacherIdInput.value.trim();
+    const rows = people.map(p => ({
+      fecha: todayShort(),
+      hora: nowTime(),
+      id: teacherId,
+      maestro: teacher,
+      nombre: p.name,
+      celular: p.phone || '',
+      estado: p.status === 'p' ? 'Presente' : 'Ausente',
+      obs: p.obs || ''
+    }));
+
+    const cbName = '_save' + Date.now();
+    const payload = encodeURIComponent(JSON.stringify({ fecha: todayShort(), rows }));
+
+    try {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        const timer = setTimeout(() => {
+          s.remove(); delete window[cbName];
+          reject(new Error('Sin respuesta del servidor'));
+        }, 20000);
+        window[cbName] = (resp) => {
+          clearTimeout(timer); s.remove(); delete window[cbName];
+          resp && resp.ok ? resolve() : reject(new Error(resp && resp.error || 'Error en servidor'));
+        };
+        s.onerror = () => {
+          clearTimeout(timer); s.remove(); delete window[cbName];
+          reject(new Error('No se pudo conectar'));
+        };
+        s.src = APPS_SCRIPT_URL + '?payload=' + payload + '&callback=' + cbName + '&t=' + Date.now();
+        document.head.appendChild(s);
+      });
+      toast('¡Guardado en Google Sheets!', 'ok');
+    } catch(e) {
+      toast('Error: ' + e.message, 'err');
+    }
+
+    saving = false;
+    btn.disabled = false;
+    btn.innerHTML = '<span class="icon">📋</span> Guardar';
+  }
+
+  function toast(msg, type='') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.className = 'toast', 2800);
+  }
+
+  render();
+</script>
+</body>
+</html>
